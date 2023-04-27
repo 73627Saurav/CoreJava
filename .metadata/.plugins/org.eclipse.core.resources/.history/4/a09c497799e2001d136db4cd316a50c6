@@ -1,0 +1,65 @@
+import com.google.cloud.dialogflow.v2.*;
+import com.google.protobuf.Struct;
+import com.google.protobuf.Value;
+import java.util.Map;
+import java.util.HashMap;
+import ai.openai.*;
+import ai.openai.api.models.CompletionResponse;
+
+public class Chatbot {
+
+  public static void main(String[] args) throws Exception {
+    
+    SessionsClient sessionsClient = SessionsClient.create();
+    String projectId = "YOUR_PROJECT_ID";
+    String sessionId = "YOUR_SESSION_ID";
+    String languageCode = "en-US";
+    String openaiApiKey = "YOUR_OPENAI_API_KEY";
+
+    // Set up OpenAI API client
+    Openai api = new Openai(openaiApiKey);
+
+    // User input
+    String userInput = "What is the weather like today?";
+
+    // Build Dialogflow request
+    TextInput.Builder textInput = TextInput.newBuilder().setText(userInput).setLanguageCode(languageCode);
+    QueryInput queryInput = QueryInput.newBuilder().setText(textInput).build();
+    SessionName session = SessionName.of(projectId, sessionId);
+    DetectIntentRequest detectIntentRequest = DetectIntentRequest.newBuilder().setSession(session.toString())
+        .setQueryInput(queryInput).build();
+
+    // Send user input to Dialogflow
+    DetectIntentResponse detectIntentResponse = sessionsClient.detectIntent(detectIntentRequest);
+    Map<String, Value> parameters = detectIntentResponse.getQueryResult().getParameters().getFieldsMap();
+
+    // Pass parameters to OpenAI API
+    String prompt = buildPrompt(parameters);
+    CompletionResponse aiResponse = api.getCompletions(prompt, 1, 100, null, 0.5, null, null, null, null);
+
+    // Return OpenAI response to Dialogflow
+    String aiText = aiResponse.getChoices().get(0).getText();
+    System.out.println("OpenAI Response: " + aiText);
+
+    // Build Dialogflow response
+    Struct.Builder structBuilder = Struct.newBuilder();
+    structBuilder.putFields("text", Value.newBuilder().setStringValue(aiText).build());
+    Struct output = structBuilder.build();
+    WebhookResponse.Builder webhookResponseBuilder = WebhookResponse.newBuilder().setFulfillmentText(aiText)
+        .setPayload(output);
+    WebhookResponse webhookResponse = webhookResponseBuilder.build();
+
+    // Print Dialogflow response
+    System.out.println("Dialogflow Response: " + webhookResponse.getFulfillmentText());
+
+  }
+
+  private static String buildPrompt(Map<String, Value> parameters) {
+    StringBuilder promptBuilder = new StringBuilder();
+    for (Map.Entry<String, Value> entry : parameters.entrySet()) {
+      promptBuilder.append(entry.getKey() + ": " + entry.getValue().getStringValue() + "\n");
+    }
+    return promptBuilder.toString();
+  }
+
+}

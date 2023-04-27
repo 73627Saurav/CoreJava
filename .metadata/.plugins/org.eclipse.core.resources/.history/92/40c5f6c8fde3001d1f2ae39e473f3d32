@@ -1,0 +1,52 @@
+package com.app.tester;
+import java.util.Scanner;
+import com.app.core.Box; // The type com.app.core.Box is not visible 
+// Box class has default access specifier which has package level visibility, within the same package
+// there are only to access specifier for class either default or public
+// thus, make clas Box public 
+
+
+class TestBox {
+    @SuppressWarnings("null")
+	public static void main(String[] args) {
+        
+    	@SuppressWarnings("unused")
+    	int data = 100;// data : prim type , holds value, method local var : stack
+        // sc
+        Scanner sc = new Scanner(System.in);
+        System.out.println("Enter Box dims : w h d");
+        
+        Box b1;// b1 : ref type var (holds address) : class type of ref , method local var
+        // var : allocated memory on stack : bytes will be allocated as per the JVM specification
+        // System.out.println(b1);//javac err :
+        // object are not created but memory is allocated to store ref type of variable
+        // compiler does not allow uninitialized variable
+        
+        b1 = 	//
+        		new	//new keyword returns reference to the object dynamically created on heap nothing but pointer where object is allocated in the heap & assign that address to b1
+        			Box(sc.nextDouble(), sc.nextDouble(), sc.nextDouble()); //creating instance of class
+        //java is right associative thus RHS is executed first i.e new Box(sc.nextDouble(), sc.nextDouble(), sc.nextDouble());
+        //for creating instance first class has to be loaded in method area
+        //b1 is holding reference to the current object on heap
+        
+        //b1++;	//javac error //Type mismatch: cannot convert from Box to int
+        
+        // display box dims
+        System.out.println(b1.getBoxDims());	
+        // display box volume
+        System.out.println("Box volume " + b1.computeVolume());
+        
+        Box b2 = b1;// copy of refs //thus address gets copied into b2 //b2 starts pointing to same object on heap
+        System.out.println("Box volume " + b2.computeVolume());
+        b1 = b2 = null;// 1 object is marked for GC
+        System.out.println("Box volume " + b1.computeVolume()); //NullPointerException //runtime error
+        	
+        System.out.println("Enter side of a cube");
+        Box cube = new Box(sc.nextDouble());
+        System.out.println(cube.getBoxDims());
+        System.out.println("Cube volume " + cube.computeVolume());
+        System.out.println("cntd....");
+        sc.close();
+    }
+
+}
